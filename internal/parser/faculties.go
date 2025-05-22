@@ -26,7 +26,7 @@ func ExtractFaculties(html string) ([]db.Faculty, error) {
 	}
 
 	class := "fac-list"
-	node = getElementsByClass(node, class)[0]
+	node = getFirstNode(getElementsByClass(node, class), "fac-list")
 
 	// Get the url for each faculty
 	tag := "a"
@@ -41,7 +41,7 @@ func ExtractFaculties(html string) ([]db.Faculty, error) {
 		index := fmt.Sprintf("%03d", order)
 
 		nodes := getElementsByTag(n, "h5")
-		node = nodes[0]
+		node = getFirstNode(nodes, "h5")
 		name := getInnerText(node)
 
 		href := getAttributeValue(n, "href")
@@ -64,7 +64,7 @@ func ExtractFaculties(html string) ([]db.Faculty, error) {
 			Name:      name,
 			ClassName: className,
 			FileName:  fmt.Sprintf("%s_faculty_%s_%s", index, ueid, className),
-			Url:       url,
+			Url:       url.String(),
 		}
 
 		faculties = append(faculties, faculty)

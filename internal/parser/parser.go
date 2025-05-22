@@ -3,9 +3,10 @@ package parser
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"strings"
 
-	"github.com/michaeldebetaz/unilike/internal/db"
+	"github.com/michaeldebetaz/unilike/internal/assert"
 	"golang.org/x/net/html"
 )
 
@@ -79,6 +80,7 @@ func getAttributeValue(n *html.Node, attrName string) string {
 
 func getInnerText(n *html.Node) string {
 	var buf bytes.Buffer
+
 	if n.Type == html.TextNode {
 		buf.WriteString(n.Data)
 	} else if n.Type == html.ElementNode {
@@ -87,25 +89,23 @@ func getInnerText(n *html.Node) string {
 		}
 	}
 
-	return buf.String()
+	return strings.TrimSpace(buf.String())
 }
 
-func toString(nodes ...*html.Node) (string, error) {
+func getFirstNode(nodes []*html.Node, msg string) *html.Node {
+	return assert.At(nodes, 0, msg)
+}
+
+func toString(nodes ...*html.Node) string {
 	var b bytes.Buffer
 
 	for _, n := range nodes {
 		chunk := bytes.Buffer{}
 		if err := html.Render(&chunk, n); err != nil {
 			err := fmt.Errorf("Error while rendering HTML: %v", err)
-			return "", err
+			log.Fatal(err)
 		}
 		b.Write(chunk.Bytes())
 	}
-	return b.String(), nil
-}
-
-func ExtractData(n *html.Node) (db.Db, error) {
-	var data db.Db
-
-	return data, nil
+	return b.String()
 }

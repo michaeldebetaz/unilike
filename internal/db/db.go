@@ -3,7 +3,6 @@ package db
 import (
 	"encoding/json"
 	"fmt"
-	"net/url"
 )
 
 type Db struct {
@@ -16,7 +15,7 @@ type Faculty struct {
 	Name      string    `json:"name"`
 	ClassName string    `json:"class_name"`
 	FileName  string    `json:"file_name"`
-	Url       *url.URL  `json:"url"`
+	Url       string    `json:"url"`
 	Programs  []Program `json:"programs"`
 }
 
@@ -26,7 +25,7 @@ type Program struct {
 	EtapeId1       string   `json:"etape_id_1"`
 	Name           string   `json:"name"`
 	FileName       string   `json:"file_name"`
-	Url            *url.URL `json:"url"`
+	Url            string   `json:"url"`
 	Courses        []Course `json:"courses"`
 }
 
