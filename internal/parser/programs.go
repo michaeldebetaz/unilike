@@ -10,9 +10,7 @@ import (
 	"github.com/michaeldebetaz/unilike/internal/env"
 )
 
-func ExtractPrograms(faculty db.Faculty, html string) ([]db.Program, error) {
-	fmt.Println("Faculty:", faculty.Ueid, "-", faculty.Name)
-
+func ExtractPrograms(html string) ([]db.Program, error) {
 	programs := []db.Program{}
 
 	htmlNode, err := parseHtml(html)
@@ -22,63 +20,50 @@ func ExtractPrograms(faculty db.Faculty, html string) ([]db.Program, error) {
 	}
 
 	id := "UniDocContent"
-	uniDocContentDivNode, err := getElementById(htmlNode, id)
+	uniDocContentDivNode, err := htmlNode.id(id)
 	if err != nil {
 		err := fmt.Errorf("Failed to find element with id %s: %v", id, err)
 		return programs, err
 	}
 
-	class := "listeEtapes"
-	listeEtapesNode := getFirstNode(getElementsByClass(uniDocContentDivNode, class), "listeEtapes")
+	listeEtapesNode := uniDocContentDivNode.classes("listeEtapes").first()
+	listeEtapesTrNodes := listeEtapesNode.tags("tr")
 
-	tag := "tr"
-	listeEtapesTrNodes := getElementsByTag(listeEtapesNode, tag)
-
-	order := 1
+	order := 0
 
 	etapeTitle := ""
 	_ = etapeTitle
 
-	for _, listeEtapesTrNode := range listeEtapesTrNodes {
+	for _, listeEtapesTrNode := range *listeEtapesTrNodes {
 		program := db.Program{}
 
-		class := "etapeTitle"
-		etapeTitleTdNodes := getElementsByClass(listeEtapesTrNode, class)
-		if len(etapeTitleTdNodes) > 0 {
-			etapeTitle = getInnerText(getFirstNode(etapeTitleTdNodes, "etapeTitle"))
+		etapeTitleTdNodes := listeEtapesTrNode.classes("etapeTitle")
+		if etapeTitleTdNodes.len() > 0 {
+			etapeTitle = etapeTitleTdNodes.first().innerText()
 		}
 
-		class = "tdNomEtape"
-		nomEtapeTdNodes := getElementsByClass(listeEtapesTrNode, class)
+		nomEtapeTdNodes := listeEtapesTrNode.classes("tdNomEtape")
 
-		if len(nomEtapeTdNodes) < 1 {
+		if nomEtapeTdNodes.len() < 1 {
 			continue
 		}
 
-		nomEtape := getInnerText(getFirstNode(nomEtapeTdNodes, "tdNomEtape"))
+		nomEtape := nomEtapeTdNodes.first().innerText()
+		liensTableNode := listeEtapesTrNode.classes("liens").first()
+		liensTrNodes := liensTableNode.tags("tr")
 
-		class = "liens"
-		liensTableNode := getFirstNode(getElementsByClass(listeEtapesTrNode, class), "liens")
-
-		tag = "tr"
-		liensTrNodes := getElementsByTag(liensTableNode, tag)
-
-		for _, liensTrNode := range liensTrNodes {
-			tag = "form"
-			formNodes := getElementsByTag(liensTrNode, tag)
+		for _, liensTrNode := range *liensTrNodes {
+			formNodes := liensTrNode.tags("form")
 
 			// For programs with searchable date
-			if len(formNodes) > 0 {
-				formNode := getFirstNode(formNodes, "form")
-
-				tag := "input"
-				inputNodes := getElementsByTag(formNode, tag)
+			if formNodes.len() > 0 {
+				inputNodes := formNodes.first().tags("input")
 
 				v := url.Values{}
 
-				for _, inputNode := range inputNodes {
-					name := getAttributeValue(inputNode, "name")
-					value := getAttributeValue(inputNode, "value")
+				for _, inputNode := range *inputNodes {
+					name := inputNode.attributeValue("name")
+					value := inputNode.attributeValue("value")
 
 					if strings.HasPrefix(name, "etape_") {
 						v.Set("v_date", value)
@@ -90,8 +75,8 @@ func ExtractPrograms(faculty db.Faculty, html string) ([]db.Program, error) {
 				}
 
 				date := v.Get("v_date")
-				program.Order = order
 				order++
+				program.Order = order
 
 				program.Name = etapeTitle + " - " + nomEtape + " - " + date
 				u, err := url.Parse(env.BASE_PATH + "listeCours.php?" + v.Encode())
@@ -100,8 +85,6 @@ func ExtractPrograms(faculty db.Faculty, html string) ([]db.Program, error) {
 					return programs, err
 				}
 
-				fmt.Println("Program:", program.Name)
-
 				program.Url = u.String()
 
 				etapeId1 := v.Get("v_etapeid1")
@@ -109,7 +92,7 @@ func ExtractPrograms(faculty db.Faculty, html string) ([]db.Program, error) {
 
 				index := fmt.Sprintf("%03d", order)
 
-				program.FileName = fmt.Sprintf("%s_%s_%s", faculty.FileName, index, etapeId1)
+				program.Filename = fmt.Sprintf("%s_program_%s", index, etapeId1)
 				program.SemPosSelected = -1
 
 				programs = append(programs, program)
@@ -118,20 +101,19 @@ func ExtractPrograms(faculty db.Faculty, html string) ([]db.Program, error) {
 
 			tag := "td"
 
-			liensTdNodes := getElementsByTag(liensTrNode, tag)
+			liensTdNodes := liensTrNode.tags(tag)
 
-			if len(liensTdNodes) > 0 {
-				semester := getInnerText(getFirstNode(liensTdNodes, "liensTdNode"))
+			if liensTdNodes.len() > 0 {
+				semester := liensTdNodes.first().innerText()
 
-				tag = "a"
-				liensANodes := getElementsByTag(liensTrNode, tag)
+				liensANodes := liensTrNode.tags("a")
 
-				for _, aNode := range liensANodes {
-					href := getAttributeValue(aNode, "href")
+				for _, aNode := range *liensANodes {
+					href := aNode.attributeValue("href")
 
 					if strings.HasPrefix(href, "listeCours.php") {
-						program.Order = order
 						order++
+						program.Order = order
 
 						program.Name = etapeTitle + " - " + nomEtape + " - " + semester
 
@@ -154,7 +136,7 @@ func ExtractPrograms(faculty db.Faculty, html string) ([]db.Program, error) {
 						program.EtapeId1 = etapeId1
 
 						index := fmt.Sprintf("%03d", order)
-						program.FileName = fmt.Sprintf("%s_%s_%s", faculty.FileName, index, etapeId1)
+						program.Filename = fmt.Sprintf("%s_%s", index, etapeId1)
 
 						programs = append(programs, program)
 					}

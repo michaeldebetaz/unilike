@@ -10,64 +10,18 @@ import (
 	"golang.org/x/net/html"
 )
 
-func parseHtml(htmlStr string) (*html.Node, error) {
-	doc, err := html.Parse(strings.NewReader(htmlStr))
-	if err != nil {
-		err := fmt.Errorf("Error while parsing HTML: %v", err)
-		return nil, err
-	}
+type (
+	Node  html.Node
+	Nodes []Node
+)
 
-	return doc, nil
+func (n *Nodes) first() *Node {
+	node := assert.At(*n, 0)
+
+	return &node
 }
 
-func getElementsByTag(n *html.Node, tag string) []*html.Node {
-	var nodes []*html.Node
-	if n.Type == html.ElementNode && n.Data == tag {
-		nodes = append(nodes, n)
-	}
-
-	for c := n.FirstChild; c != nil; c = c.NextSibling {
-		nodes = append(nodes, getElementsByTag(c, tag)...)
-	}
-	return nodes
-}
-
-func getElementById(n *html.Node, id string) (*html.Node, error) {
-	if n.Type == html.ElementNode {
-		for _, attr := range n.Attr {
-			if attr.Key == "id" && attr.Val == id {
-				return n, nil
-			}
-		}
-	}
-	for c := n.FirstChild; c != nil; c = c.NextSibling {
-		if found, _ := getElementById(c, id); found != nil {
-			return found, nil
-		}
-	}
-
-	err := fmt.Errorf("Element with id %s not found", id)
-	return nil, err
-}
-
-func getElementsByClass(n *html.Node, class string) []*html.Node {
-	var nodes []*html.Node
-	if n.Type == html.ElementNode {
-		for _, attr := range n.Attr {
-			if attr.Key == "class" && strings.Contains(attr.Val, class) {
-				nodes = append(nodes, n)
-			}
-		}
-	}
-
-	for c := n.FirstChild; c != nil; c = c.NextSibling {
-		nodes = append(nodes, getElementsByClass(c, class)...)
-	}
-
-	return nodes
-}
-
-func getAttributeValue(n *html.Node, attrName string) string {
+func (n *Node) attributeValue(attrName string) string {
 	if n.Type == html.ElementNode {
 		for _, attr := range n.Attr {
 			if attr.Key == attrName {
@@ -78,34 +32,104 @@ func getAttributeValue(n *html.Node, attrName string) string {
 	return ""
 }
 
-func getInnerText(n *html.Node) string {
+func (n *Node) id(id string) (*Node, error) {
+	if n.Type == html.ElementNode {
+		for _, attr := range n.Attr {
+			if attr.Key == "id" && attr.Val == id {
+				return n, nil
+			}
+		}
+	}
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		if found, _ := (*Node)(c).id(id); found != nil {
+			return found, nil
+		}
+	}
+
+	err := fmt.Errorf("Element with id %s not found", id)
+	return nil, err
+}
+
+func (n *Node) classes(class string) *Nodes {
+	var nodes Nodes
+	if n.Type == html.ElementNode {
+		for _, attr := range n.Attr {
+			if attr.Key == "class" && strings.Contains(attr.Val, class) {
+				nodes = append(nodes, Node(*n))
+			}
+		}
+	}
+
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		node := Node(*c)
+		nodes = append(nodes, *node.classes(class)...)
+	}
+
+	return &nodes
+}
+
+func (n *Node) tags(tag string) *Nodes {
+	var nodes Nodes
+	if n.Type == html.ElementNode && n.Data == tag {
+		node := Node(*n)
+		nodes = append(nodes, node)
+	}
+
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		node := Node(*c)
+		nodes = append(nodes, *node.tags(tag)...)
+	}
+	return &nodes
+}
+
+func (n *Node) innerText() string {
 	var buf bytes.Buffer
+
+	if n == nil {
+		return ""
+	}
 
 	if n.Type == html.TextNode {
 		buf.WriteString(n.Data)
 	} else if n.Type == html.ElementNode {
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			buf.WriteString(getInnerText(c))
+			node := Node(*c)
+			buf.WriteString(node.innerText())
 		}
 	}
 
 	return strings.TrimSpace(buf.String())
 }
 
-func getFirstNode(nodes []*html.Node, msg string) *html.Node {
-	return assert.At(nodes, 0, msg)
+func (n *Nodes) len() int {
+	if n == nil {
+		return 0
+	}
+	return len(*n)
 }
 
-func toString(nodes ...*html.Node) string {
+func (n *Nodes) string() string {
 	var b bytes.Buffer
 
-	for _, n := range nodes {
+	for _, node := range *n {
 		chunk := bytes.Buffer{}
-		if err := html.Render(&chunk, n); err != nil {
+		if err := html.Render(&chunk, (*html.Node)(&node)); err != nil {
 			err := fmt.Errorf("Error while rendering HTML: %v", err)
 			log.Fatal(err)
 		}
 		b.Write(chunk.Bytes())
 	}
 	return b.String()
+}
+
+func parseHtml(htmlStr string) (*Node, error) {
+	doc, err := html.Parse(strings.NewReader(htmlStr))
+	if err != nil {
+		err := fmt.Errorf("Error while parsing HTML: %v", err)
+		return nil, err
+	}
+
+	node := Node(*doc)
+
+	return &node, nil
 }

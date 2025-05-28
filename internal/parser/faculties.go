@@ -12,39 +12,37 @@ import (
 func ExtractFaculties(html string) ([]db.Faculty, error) {
 	faculties := []db.Faculty{}
 
-	node, err := parseHtml(html)
+	htmlNode, err := parseHtml(html)
 	if err != nil {
 		err := fmt.Errorf("Failed to parse HTML: %v", err)
 		return faculties, err
 	}
 
 	id := "UniDocContent"
-	node, err = getElementById(node, id)
+	uniDocContentDivNode, err := htmlNode.id(id)
 	if err != nil {
 		err := fmt.Errorf("Failed to find element with id %s: %v", id, err)
 		return faculties, err
 	}
 
-	class := "fac-list"
-	node = getFirstNode(getElementsByClass(node, class), "fac-list")
+	factListDivNode := uniDocContentDivNode.classes("fac-list").first()
 
 	// Get the url for each faculty
 	tag := "a"
-	nodes := getElementsByTag(node, tag)
-	if len(nodes) == 0 {
+	facListANodes := factListDivNode.tags(tag)
+	if facListANodes.len() < 1 {
 		err := fmt.Errorf("Failed to find elements with tag %s", tag)
 		return faculties, err
 	}
 
-	for i, n := range nodes {
+	for i, aNode := range *facListANodes {
 		order := i + 1
 		index := fmt.Sprintf("%03d", order)
 
-		nodes := getElementsByTag(n, "h5")
-		node = getFirstNode(nodes, "h5")
-		name := getInnerText(node)
+		h5Node := aNode.tags("h5").first()
+		name := h5Node.innerText()
 
-		href := getAttributeValue(n, "href")
+		href := aNode.attributeValue("href")
 		url, error := url.Parse(env.BASE_PATH + href)
 		if error != nil {
 			err := fmt.Errorf("Failed to parse URL: %v", error)
@@ -54,17 +52,16 @@ func ExtractFaculties(html string) ([]db.Faculty, error) {
 		values := url.Query()
 		ueid := values.Get("v_ueid")
 
-		classNames := strings.Split(getAttributeValue(n, "class"), " ")
+		classNames := strings.Split(aNode.attributeValue("class"), " ")
 		lastIndex := len(classNames) - 1
 		className := classNames[lastIndex]
 
 		faculty := db.Faculty{
-			Order:     order,
-			Ueid:      ueid,
-			Name:      name,
-			ClassName: className,
-			FileName:  fmt.Sprintf("%s_faculty_%s_%s", index, ueid, className),
-			Url:       url.String(),
+			Order:    order,
+			Ueid:     ueid,
+			Name:     name,
+			Filename: fmt.Sprintf("%s_faculty_%s_%s", index, ueid, className),
+			Url:      url.String(),
 		}
 
 		faculties = append(faculties, faculty)
