@@ -9,3 +9,11 @@ func At[T any](slice []T, index int) T {
 
 	return slice[index]
 }
+
+func NotEmpty(s string) string {
+	if s == "" {
+		log.Fatal("String cannot be empty")
+	}
+
+	return s
+}

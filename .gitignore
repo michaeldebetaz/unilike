@@ -1,3 +1,4 @@
-cache
+.cache
+db.json
 out
 outputs/

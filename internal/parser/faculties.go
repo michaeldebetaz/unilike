@@ -43,7 +43,7 @@ func ExtractFaculties(html string) ([]db.Faculty, error) {
 		name := h5Node.innerText()
 
 		href := aNode.attributeValue("href")
-		url, error := url.Parse(env.BASE_PATH + href)
+		url, error := url.Parse(env.BASE_PATH() + href)
 		if error != nil {
 			err := fmt.Errorf("Failed to parse URL: %v", error)
 			return faculties, err

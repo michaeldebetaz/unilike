@@ -53,7 +53,7 @@ func ExtractCourses(html string) ([]db.Course, error) {
 		matches := re.FindStringSubmatch(onClick)
 
 		href := assert.At(matches, 1)
-		u, err := url.Parse(env.BASE_PATH + href)
+		u, err := url.Parse(env.BASE_PATH() + href)
 		if err != nil {
 			err := fmt.Errorf("Failed to parse URL: %v", err)
 			return courses, err

@@ -1,0 +1,12 @@
+{{ define "title" }}Faculties{{ end }} {{ define "body" }}
+<h1>Faculties</h1>
+<p>{{ . | len }} faculties found.</p>
+
+<ol>
+  {{ range . }}
+  <li>
+    <a href="{{ .Url }}">{{ .Name }}</a>
+  </li>
+  {{end}}
+</ol>
+{{end}}

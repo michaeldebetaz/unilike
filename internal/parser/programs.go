@@ -79,7 +79,7 @@ func ExtractPrograms(html string) ([]db.Program, error) {
 				program.Order = order
 
 				program.Name = etapeTitle + " - " + nomEtape + " - " + date
-				u, err := url.Parse(env.BASE_PATH + "listeCours.php?" + v.Encode())
+				u, err := url.Parse(env.BASE_PATH() + "listeCours.php?" + v.Encode())
 				if err != nil {
 					err := fmt.Errorf("Failed to parse URL: %v", err)
 					return programs, err
@@ -117,7 +117,7 @@ func ExtractPrograms(html string) ([]db.Program, error) {
 
 						program.Name = etapeTitle + " - " + nomEtape + " - " + semester
 
-						u, error := url.Parse(env.BASE_PATH + href)
+						u, error := url.Parse(env.BASE_PATH() + href)
 						if error != nil {
 							err := fmt.Errorf("Failed to parse URL: %v", error)
 							return programs, err

@@ -1,18 +1,25 @@
 package db
 
-import "fmt"
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"os"
+
+	"github.com/michaeldebetaz/unilike/internal/writer"
+)
 
 type Db struct {
 	Faculties []Faculty `json:"faculties"`
 }
 
 type Faculty struct {
-	Order    int       `json:"order"`
-	Ueid     string    `json:"ueid"`
-	Name     string    `json:"name"`
-	Filename string    `json:"filename"`
-	Url      string    `json:"url"`
-	Html     string    `json:"html"`
+	Order    int    `json:"order"`
+	Ueid     string `json:"ueid"`
+	Name     string `json:"name"`
+	Filename string `json:"filename"`
+	Url      string `json:"url"`
+	// Html     string    `json:"html"`
 	Programs []Program `json:"programs"`
 }
 
@@ -49,4 +56,38 @@ func (db *Db) Debug() {
 			}
 		}
 	}
+}
+
+func (db *Db) SaveAsJson() error {
+	data, err := json.MarshalIndent(db, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal db to JSON: %w", err)
+	}
+
+	filename := "db.json"
+	if err := writer.ToFile(filename, string(data)); err != nil {
+		return fmt.Errorf("failed to write db to file %s: %w", filename, err)
+	}
+
+	return nil
+}
+
+func LoadFromJson() (Db, error) {
+	db := Db{}
+
+	filePath := "db.json"
+
+	if _, err := os.Stat(filePath); errors.Is(err, os.ErrNotExist) {
+		return db, nil
+	}
+
+	bytes, err := os.ReadFile(filePath)
+	if err != nil {
+		return db, fmt.Errorf("Error reading db from file: %v", err)
+	}
+	if err = json.Unmarshal(bytes, &db); err != nil {
+		return db, fmt.Errorf("Error unmarshalling db: %v", err)
+	}
+
+	return db, nil
 }

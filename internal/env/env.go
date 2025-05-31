@@ -1,11 +1,32 @@
 package env
 
-type Env struct {
-	BASE_PATH string
+import (
+	"log"
+	"log/slog"
+	"os"
+
+	"github.com/joho/godotenv"
+	"github.com/michaeldebetaz/unilike/internal/assert"
+)
+
+func Load() {
+	filepath := ".env"
+	err := godotenv.Load(filepath)
+	if err != nil {
+		log.Fatalf("Error loading %s file: %v", filepath, err)
+	}
+
+	slog.Debug("Environment variables loaded")
 }
 
-const BASE_PATH = "https://applicationspub.unil.ch/interpub/noauth/php/Ud/"
+func BASE_PATH() string {
+	return assert.NotEmpty(os.Getenv("BASE_PATH"))
+}
 
-func GetEnv(key string) Env {
-	return Env{BASE_PATH: BASE_PATH}
+func ORIGIN() string {
+	return assert.NotEmpty(os.Getenv("ORIGIN"))
+}
+
+func PORT() string {
+	return assert.NotEmpty(os.Getenv("PORT"))
 }
