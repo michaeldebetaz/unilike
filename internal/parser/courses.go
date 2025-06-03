@@ -6,9 +6,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/michaeldebetaz/unilike/internal/assert"
-	"github.com/michaeldebetaz/unilike/internal/db"
-	"github.com/michaeldebetaz/unilike/internal/env"
+	"github.com/michaeldebetaz/unilscrap/internal/assert"
+	"github.com/michaeldebetaz/unilscrap/internal/db"
+	"github.com/michaeldebetaz/unilscrap/internal/env"
 )
 
 func ExtractCourses(html string) ([]db.Course, error) {

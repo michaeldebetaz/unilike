@@ -5,8 +5,8 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/michaeldebetaz/unilike/internal/db"
-	"github.com/michaeldebetaz/unilike/internal/env"
+	"github.com/michaeldebetaz/unilscrap/internal/db"
+	"github.com/michaeldebetaz/unilscrap/internal/env"
 )
 
 func ExtractFaculties(html string) ([]db.Faculty, error) {

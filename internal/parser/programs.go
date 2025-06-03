@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/michaeldebetaz/unilike/internal/db"
-	"github.com/michaeldebetaz/unilike/internal/env"
+	"github.com/michaeldebetaz/unilscrap/internal/db"
+	"github.com/michaeldebetaz/unilscrap/internal/env"
 )
 
 func ExtractPrograms(html string) ([]db.Program, error) {

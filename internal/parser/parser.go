@@ -6,7 +6,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/michaeldebetaz/unilike/internal/assert"
+	"github.com/michaeldebetaz/unilscrap/internal/assert"
 	"golang.org/x/net/html"
 )
 

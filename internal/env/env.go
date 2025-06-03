@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
-	"github.com/michaeldebetaz/unilike/internal/assert"
+	"github.com/michaeldebetaz/unilscrap/internal/assert"
 )
 
 func Load() {

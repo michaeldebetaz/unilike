@@ -1,4 +1,4 @@
-module github.com/michaeldebetaz/unilike
+module github.com/michaeldebetaz/unilscrap
 
 go 1.24.2
 

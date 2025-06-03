@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/michaeldebetaz/unilike/internal/writer"
+	"github.com/michaeldebetaz/unilscrap/internal/writer"
 )
 
 type Db struct {
