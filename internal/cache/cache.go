@@ -6,12 +6,19 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"sync"
 )
 
-type Cache map[string]string
+type Cache struct {
+	Data  map[string]string
+	Mutex *sync.RWMutex
+}
 
 func Load() (Cache, error) {
-	cache := make(Cache)
+	cache := Cache{
+		Data:  make(map[string]string),
+		Mutex: &sync.RWMutex{},
+	}
 
 	filePath := ".cache"
 
@@ -23,7 +30,7 @@ func Load() (Cache, error) {
 	if err != nil {
 		return cache, fmt.Errorf("Error reading cache from file: %v", err)
 	}
-	if err = json.Unmarshal(bytes, &cache); err != nil {
+	if err = json.Unmarshal(bytes, &cache.Data); err != nil {
 		return cache, fmt.Errorf("Error unmarshalling cache: %v", err)
 	}
 
@@ -48,10 +55,16 @@ func (c *Cache) Save() error {
 }
 
 func (c *Cache) Get(url string) (string, bool) {
-	html, ok := (*c)[url]
+	c.Mutex.RLock()
+	defer c.Mutex.RUnlock()
+
+	html, ok := (*c).Data[url]
 	return html, ok
 }
 
 func (c *Cache) Set(url string, html string) {
-	(*c)[url] = html
+	c.Mutex.Lock()
+	defer c.Mutex.Unlock()
+
+	(*c).Data[url] = html
 }

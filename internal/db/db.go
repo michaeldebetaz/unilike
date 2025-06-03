@@ -9,7 +9,7 @@ import (
 	"github.com/michaeldebetaz/unilscrap/internal/writer"
 )
 
-type Db struct {
+type Data struct {
 	Faculties []Faculty `json:"faculties"`
 }
 
@@ -24,14 +24,14 @@ type Faculty struct {
 }
 
 type Program struct {
-	Order          int      `json:"order"`
-	SemPosSelected int      `json:"semposselected"`
-	EtapeId1       string   `json:"etapeid1"`
-	Name           string   `json:"name"`
-	Filename       string   `json:"filename"`
-	Url            string   `json:"url"`
-	Html           string   `json:"html"`
-	Courses        []Course `json:"courses"`
+	Order          int    `json:"order"`
+	SemPosSelected int    `json:"semposselected"`
+	EtapeId1       string `json:"etapeid1"`
+	Name           string `json:"name"`
+	Filename       string `json:"filename"`
+	Url            string `json:"url"`
+	// Html           string   `json:"html"`
+	Courses []Course `json:"courses"`
 }
 
 type Course struct {
@@ -40,11 +40,11 @@ type Course struct {
 	Name     string `json:"name"`
 	Filename string `json:"filename"`
 	Url      string `json:"url"`
-	Html     string `json:"html"`
+	// Html     string `json:"html"`
 	Teachers string `json:"teachers"`
 }
 
-func (db *Db) Debug() {
+func (db *Data) Debug() {
 	for _, faculty := range db.Faculties {
 		fmt.Printf("Faculty: %s - %s\n", faculty.Ueid, faculty.Name)
 		for _, program := range faculty.Programs {
@@ -58,7 +58,7 @@ func (db *Db) Debug() {
 	}
 }
 
-func (db *Db) SaveAsJson() error {
+func (db *Data) SaveAsJson() error {
 	data, err := json.MarshalIndent(db, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal db to JSON: %w", err)
@@ -72,8 +72,8 @@ func (db *Db) SaveAsJson() error {
 	return nil
 }
 
-func LoadFromJson() (Db, error) {
-	db := Db{}
+func LoadFromJson() (Data, error) {
+	db := Data{}
 
 	filePath := "db.json"
 

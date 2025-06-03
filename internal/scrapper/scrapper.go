@@ -32,8 +32,26 @@ func Scrape() {
 		log.Fatalf("Failed to extract faculties: %v", err)
 	}
 
-	data := db.Db{}
+	facultyChan := make(chan db.Faculty)
+	go extractFaculties(facultyChan, faculties, cache)
 
+	faculties = make([]db.Faculty, len(faculties))
+	for i := range faculties {
+		faculties[i] = <-facultyChan
+	}
+
+	data := db.Data{Faculties: faculties}
+
+	if err := data.SaveAsJson(); err != nil {
+		msg := fmt.Sprintf("Failed to save data to JSON: %v", err)
+		slog.Error(msg)
+	}
+	slog.Info("Data saved as JSON.")
+
+	slog.Info("Scraping process completed successfully.")
+}
+
+func extractFaculties(facultyChan chan<- db.Faculty, faculties []db.Faculty, cache cache.Cache) {
 FACULTIES:
 	for _, faculty := range faculties {
 		slog.Info("Faculty", "ueid", faculty.Ueid, "name", faculty.Name)
@@ -50,58 +68,87 @@ FACULTIES:
 			log.Fatalf("Failed to extract programs: %v", err)
 		}
 
-	PROGRAMS:
-		for _, program := range programs {
-			slog.Info("Program", "etapeId-1", program.EtapeId1, "name", program.Name)
+		programChan := make(chan db.Program)
 
+		go extractPrograms(programChan, programs, cache)
+
+		programs = make([]db.Program, len(programs))
+
+		for i := range programs {
+			program := <-programChan
 			program.Filename = fmt.Sprintf("%s_%s", faculty.Filename, program.Filename)
 
-			programHtml, err := getHtml(program.Url, cache)
-			if err != nil {
-				slog.Warn("Program page not found:", "program url", program.Url, "error", err)
-				continue PROGRAMS
-			}
-			program.Html = programHtml
-
-			courses, err := parser.ExtractCourses(programHtml)
-			if err != nil {
-				log.Fatalf("Failed to extract courses: %v", err)
-			}
-
-		COURSES:
-			for _, course := range courses {
-				slog.Info("Course", "enstyId", course.EnstyId, "name", course.Name)
-
-				course.Filename = fmt.Sprintf("%s_%s", program.Filename, course.Filename)
-
-				html, err := getHtml(course.Url, cache)
-				if err != nil {
-					slog.Warn("Failed to get course page html:", "course url", course.Url, "error", err)
-					continue COURSES
-				}
-				course.Html = html
-
-				teachers, err := parser.ExtractCourseTeachers(course.Html)
-				if err != nil {
-					slog.Warn("Failed to extract course teachers:", "course url", course.Url, "error", err)
-					continue COURSES
-				}
-
-				course.Teachers = teachers
-
-				program.Courses = append(program.Courses, course)
-			}
-			faculty.Programs = append(faculty.Programs, program)
+			programs[i] = program
 		}
-		data.Faculties = append(data.Faculties, faculty)
+
+		facultyChan <- faculty
 	}
 
-	if err := data.SaveAsJson(); err != nil {
-		msg := fmt.Sprintf("Failed to save data to JSON: %v", err)
-		slog.Error(msg)
+	close(facultyChan)
+}
+
+func extractPrograms(programChan chan<- db.Program, programs []db.Program, cache cache.Cache) {
+PROGRAMS:
+	for _, program := range programs {
+		slog.Info("Program", "etapeId-1", program.EtapeId1, "name", program.Name)
+
+		programHtml, err := getHtml(program.Url, cache)
+		if err != nil {
+			slog.Warn("Program page not found:", "program url", program.Url, "error", err)
+			continue PROGRAMS
+		}
+		// program.Html = programHtml
+
+		courses, err := parser.ExtractCourses(programHtml)
+		if err != nil {
+			log.Fatalf("Failed to extract courses: %v", err)
+		}
+
+		coursesChan := make(chan db.Course)
+
+		go extractCourses(coursesChan, courses, cache)
+
+		courses = make([]db.Course, len(courses))
+
+		for i := range courses {
+			course := <-coursesChan
+			course.Filename = fmt.Sprintf("%s_%s", program.Filename, course.Filename)
+
+			courses[i] = course
+		}
+
+		program.Courses = courses
+
+		programChan <- program
 	}
 
-	slog.Info("Scraping process completed successfully.")
+	close(programChan)
+}
+
+func extractCourses(coursesChan chan<- db.Course, courses []db.Course, cache cache.Cache) {
+COURSES:
+	for _, course := range courses {
+		slog.Info("Course", "enstyId", course.EnstyId, "name", course.Name)
+
+		courseHtml, err := getHtml(course.Url, cache)
+		if err != nil {
+			slog.Warn("Failed to get course page html:", "course url", course.Url, "error", err)
+			continue COURSES
+		}
+		// course.Html = courseHtml
+
+		teachers, err := parser.ExtractCourseTeachers(courseHtml)
+		if err != nil {
+			slog.Warn("Failed to extract course teachers:", "course url", course.Url, "error", err)
+			continue COURSES
+		}
+
+		course.Teachers = teachers
+
+		coursesChan <- course
+	}
+
+	close(coursesChan)
 }
 
 func getHtml(url string, cache cache.Cache) (string, error) {
