@@ -9,6 +9,8 @@ import (
 	"sync"
 )
 
+const FILE_PATH = "./.cache"
+
 type Cache struct {
 	Data  map[string]string
 	Mutex *sync.RWMutex
@@ -20,13 +22,11 @@ func Load() (Cache, error) {
 		Mutex: &sync.RWMutex{},
 	}
 
-	filePath := ".cache"
-
-	if _, err := os.Stat(filePath); errors.Is(err, os.ErrNotExist) {
+	if _, err := os.Stat(FILE_PATH); errors.Is(err, os.ErrNotExist) {
 		return cache, nil
 	}
 
-	bytes, err := os.ReadFile(filePath)
+	bytes, err := os.ReadFile(FILE_PATH)
 	if err != nil {
 		return cache, fmt.Errorf("Error reading cache from file: %v", err)
 	}
@@ -40,11 +40,11 @@ func Load() (Cache, error) {
 func (c *Cache) Save() error {
 	slog.Info("Saving cache to file...")
 
-	bytes, err := json.Marshal(c)
+	bytes, err := json.Marshal(c.Data)
 	if err != nil {
 		return fmt.Errorf("Error marshalling cache: %v", err)
 	}
-	err = os.WriteFile("cache", bytes, 0644)
+	err = os.WriteFile(FILE_PATH, bytes, 0644)
 	if err != nil {
 		return fmt.Errorf("Error writing cache to file: %v", err)
 	}
